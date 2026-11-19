@@ -1,7 +1,11 @@
+# Dependențe Node.js
 node_modules/
 
+# Cod compilat
 dist/
 
+# Variabile de mediu și parole
 .env
 
-.Ds_Store
+# Fișiere de sistem / editor
+.DS_Store

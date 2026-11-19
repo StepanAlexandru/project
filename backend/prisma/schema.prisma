@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Species {
+  id                 Int      @id @default(autoincrement())
+  commonName         String
+  scientificName     String   @unique
+  conservationStatus String
+  description        String?
+  model3dUrl         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  animals Animal[]
+}
+
+model Enclosure {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  habitatType String
+  capacity    Int
+  qrCode      String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  animals Animal[]
+}
+
+model Animal {
+  id          Int      @id @default(autoincrement())
+  name        String
+  age         Int?
+  gender      String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  speciesId Int
+  species   Species @relation(fields: [speciesId], references: [id])
+
+  enclosureId Int
+  enclosure   Enclosure @relation(fields: [enclosureId], references: [id])
+}
