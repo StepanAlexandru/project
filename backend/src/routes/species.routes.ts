@@ -1,16 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma, isPrismaError } from '../lib/prisma';
 
 const router = Router();
 
-function isPrismaError(error: unknown): error is { code: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    typeof (error as { code: unknown }).code === 'string'
-  );
-}
 
 // 1. READ ALL — GET /api/species
 router.get('/', async (_req: Request, res: Response) => {
