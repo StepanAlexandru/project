@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { prisma, isPrismaError } from '../lib/prisma';
+import QRCode from 'qrcode';
+
+
 
 const router = Router();
 
@@ -44,6 +47,55 @@ router.get('/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Eroare la preluarea incintei.' });
+  }
+});
+
+// 2.1 GENERATE QR — GET /api/enclosures/:id/qr
+router.get('/:id/qr', async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: 'ID-ul trebuie să fie un număr valid.' });
+    return;
+  }
+
+  try {
+    const enclosure = await prisma.enclosure.findUnique({ where: { id } });
+
+    if (!enclosure) {
+      res.status(404).json({ error: 'Incinta nu a fost găsită.' });
+      return;
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const targetUrl = enclosure.qrCode || `${frontendUrl}/visit/enclosure/${enclosure.id}`;
+
+    // Salvăm URL-ul în baza de date dacă incinta nu avea încă un qrCode
+    if (!enclosure.qrCode) {
+      await prisma.enclosure.update({
+        where: { id },
+        data: { qrCode: targetUrl },
+      });
+    }
+
+    // Opțional: dacă frontend-ul cere ?format=json, trimitem Data URL (base64)
+    if (req.query.format === 'json') {
+      const qrDataUrl = await QRCode.toDataURL(targetUrl, { width: 300 });
+      res.json({ enclosureId: enclosure.id, url: targetUrl, qrDataUrl });
+      return;
+    }
+
+    // Implicit: trimitem direct imaginea PNG
+    const qrBuffer = await QRCode.toBuffer(targetUrl, {
+      type: 'png',
+      width: 300,
+      margin: 2,
+    });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.send(qrBuffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Eroare la generarea codului QR.' });
   }
 });
 
